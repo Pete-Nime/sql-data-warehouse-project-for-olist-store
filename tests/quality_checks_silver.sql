@@ -17,17 +17,20 @@ Usage Notes:
 ===============================================================================
 */
 
+
 -- ====================================================================
--- Checking 'silver.crm_cust_info'
+-- Checking 'silver.crm_customers_details'
 -- ====================================================================
+
 -- Check for NULLs or Duplicates in Primary Key
 -- Expectation: No Results
 SELECT 
-    customers_details,
+    customer_id,
     COUNT(*) 
-FROM silver.crm_cust_info
-GROUP BY customers_details
-HAVING COUNT(*) > 1 OR customers_details IS NULL;
+FROM silver.crm_customers_details
+GROUP BY customer_id
+HAVING COUNT(*) > 1 OR customer_id IS NULL;
+
 
 -- Check for Unwanted Spaces
 -- Expectation: No Results
@@ -36,124 +39,197 @@ SELECT
 FROM silver.crm_customers_details
 WHERE customer_city != TRIM(customer_city);
 
+
 -- Data Standardization & Consistency
 SELECT DISTINCT 
    customer_state 
-FROM silver.crm_customers_details;
+FROM silver.crm_customers_details
+ORDER BY customer_state;
+
+
 
 -- ====================================================================
--- Checking 'silver.crm_prd_info'
+-- Checking 'silver.erp_products'
 -- ====================================================================
+
 -- Check for NULLs or Duplicates in Primary Key
 -- Expectation: No Results
 SELECT 
-    customer_id,
+    product_id,
     COUNT(*) 
-FROM silver.customers_details
-GROUP BY prd_id
-HAVING COUNT(*) > 1 OR  IS NULL;
+FROM silver.erp_products
+GROUP BY product_id
+HAVING COUNT(*) > 1 OR product_id IS NULL;
+
 
 -- Check for Unwanted Spaces
 -- Expectation: No Results
 SELECT 
-    product_category_name 
-FROM silver.crm_product_category_translation
-WHERE  product_category_name != TRIM( product_category_name);
+    product_category_name
+FROM silver.erp_products
+WHERE product_category_name != TRIM(product_category_name);
 
--- Check for NULLs or Negative Values in Cost
+
+-- Check for NULLs or Negative Values in Product Dimensions
 -- Expectation: No Results
 SELECT 
-    price
-FROM silver.crm_order_items
-WHERE price < 0 OR price IS NULL;
+    product_weight_g,
+    product_length_cm,
+    product_height_cm,
+    product_width_cm
+FROM silver.erp_products
+WHERE product_weight_g < 0 
+   OR product_length_cm < 0
+   OR product_height_cm < 0
+   OR product_width_cm < 0;
+
 
 -- Data Standardization & Consistency
 SELECT DISTINCT 
-    customer_unique_id 
-FROM silver.crm_customers_details;
+    product_category_name
+FROM silver.erp_products
+ORDER BY product_category_name;
 
--- Check for Invalid Date Orders (Start Date > End Date)
--- Expectation: No Results
-SELECT 
-    * 
-FROM silver.crm_orders
-WHERE order_deliverd_customer_date < order_estimated_delivered_date;
+
 
 -- ====================================================================
--- Checking 'silver.crm_sales_details'
+-- Checking 'silver.erp_orders'
 -- ====================================================================
--- Check for Invalid Dates
--- Expectation: No Invalid Dates
-SELECT 
-    NULLIF(sls_due_dt, 0) AS sls_due_dt 
-FROM bronze.crm_sales_details
-WHERE sls_due_dt <= 0 
-    OR LEN(sls_due_dt) != 8 
-    OR sls_due_dt > 20500101 
-    OR sls_due_dt < 19000101;
 
--- Check for Invalid Date Orders (Order Date > Shipping/Due Dates)
+-- Check for NULLs or Duplicates in Primary Key
 -- Expectation: No Results
 SELECT 
-    * 
-FROM silver.crm_sales_details
-WHERE sls_order_dt > sls_ship_dt 
-   OR sls_order_dt > sls_due_dt;
+    order_id,
+    COUNT(*) 
+FROM silver.erp_orders
+GROUP BY order_id
+HAVING COUNT(*) > 1 OR order_id IS NULL;
 
--- Check Data Consistency: Sales = Quantity * Price
+
+-- Check for Invalid Date Orders
 -- Expectation: No Results
+SELECT 
+    *
+FROM silver.erp_orders
+WHERE order_approved_at < order_purchase_timestamp
+   OR order_delivered_customer_date < order_approved_at;
+
+
+
+-- ====================================================================
+-- Checking 'silver.erp_order_items'
+-- ====================================================================
+
+-- Check for NULLs in Critical Fields
+-- Expectation: No Results
+SELECT 
+    *
+FROM silver.erp_order_items
+WHERE order_id IS NULL
+   OR product_id IS NULL
+   OR seller_id IS NULL;
+
+
+-- Check for Invalid Prices or Freight Values
+-- Expectation: No Results
+SELECT 
+    price,
+    freight_value
+FROM silver.erp_order_items
+WHERE price <= 0
+   OR freight_value < 0
+   OR price IS NULL
+   OR freight_value IS NULL;
+
+
+
+-- ====================================================================
+-- Checking 'silver.erp_order_payments'
+-- ====================================================================
+
+-- Check for NULLs or Negative Payment Values
+-- Expectation: No Results
+SELECT 
+    payment_value,
+    payment_installments
+FROM silver.erp_order_payments
+WHERE payment_value <= 0
+   OR payment_installments <= 0
+   OR payment_value IS NULL;
+
+
+
+-- ====================================================================
+-- Checking 'silver.crm_order_reviews'
+-- ====================================================================
+
+-- Check for Invalid Review Scores
+-- Expectation: Scores between 1 and 5
 SELECT DISTINCT 
-    sls_sales,
-    sls_quantity,
-    sls_price 
-FROM silver.crm_sales_details
-WHERE sls_sales != sls_quantity * sls_price
-   OR sls_sales IS NULL 
-   OR sls_quantity IS NULL 
-   OR sls_price IS NULL
-   OR sls_sales <= 0 
-   OR sls_quantity <= 0 
-   OR sls_price <= 0
-ORDER BY sls_sales, sls_quantity, sls_price;
+    review_score
+FROM silver.crm_order_reviews
+WHERE review_score < 1
+   OR review_score > 5
+   OR review_score IS NULL;
+
+
 
 -- ====================================================================
--- Checking 'silver.erp_cust_az12'
+-- Checking 'silver.erp_sellers'
 -- ====================================================================
--- Identify Out-of-Range Dates
--- Expectation: Birthdates between 1924-01-01 and Today
-SELECT DISTINCT 
-    bdate 
-FROM silver.erp_cust_az12
-WHERE bdate < '1924-01-01' 
-   OR bdate > GETDATE();
+
+-- Check for NULLs or Duplicates in Primary Key
+-- Expectation: No Results
+SELECT 
+    seller_id,
+    COUNT(*) 
+FROM silver.erp_sellers
+GROUP BY seller_id
+HAVING COUNT(*) > 1 OR seller_id IS NULL;
+
 
 -- Data Standardization & Consistency
 SELECT DISTINCT 
-    gen 
-FROM silver.erp_cust_az12;
+    seller_state
+FROM silver.erp_sellers
+ORDER BY seller_state;
+
+
 
 -- ====================================================================
--- Checking 'silver.erp_loc_a101'
+-- Checking 'silver.erp_product_category_translation'
 -- ====================================================================
--- Data Standardization & Consistency
-SELECT DISTINCT 
-    cntry 
-FROM silver.erp_loc_a101
-ORDER BY cntry;
 
--- ====================================================================
--- Checking 'silver.erp_px_cat_g1v2'
--- ====================================================================
 -- Check for Unwanted Spaces
 -- Expectation: No Results
 SELECT 
-    * 
-FROM silver.erp_px_cat_g1v2
-WHERE cat != TRIM(cat) 
-   OR subcat != TRIM(subcat) 
-   OR maintenance != TRIM(maintenance);
+    *
+FROM silver.erp_product_category_translation
+WHERE product_category_name != TRIM(product_category_name)
+   OR product_category_name_english != TRIM(product_category_name_english);
+
 
 -- Data Standardization & Consistency
 SELECT DISTINCT 
-    maintenance 
-FROM silver.erp_px_cat_g1v2;
+    product_category_name_english
+FROM silver.erp_product_category_translation
+ORDER BY product_category_name_english;
+
+
+
+-- ====================================================================
+-- Checking Business Rule Consistency
+-- ====================================================================
+
+-- Check Data Consistency: Payment Value vs Order Item Value
+-- Expectation: Few or No Results
+
+SELECT
+    oi.order_id,
+    SUM(oi.price + oi.freight_value) AS order_total,
+    SUM(op.payment_value) AS payment_total
+FROM silver.erp_order_items oi
+JOIN silver.erp_order_payments op
+    ON oi.order_id = op.order_id
+GROUP BY oi.order_id
+HAVING SUM(oi.price + oi.freight_value) != SUM(op.payment_value);
