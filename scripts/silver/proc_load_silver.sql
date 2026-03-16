@@ -309,4 +309,3 @@ BEGIN
 END
 GO
 EXEC silver.load_silver
-
