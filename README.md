@@ -69,6 +69,11 @@ Create analytical datasets optimized for reporting.
 
 Prepare aggregated metrics for BI tools.
 
+## 🏗️ Medallion Data Warehouse Architecture
+
+![Medallion Olist Store Architecture](tests/Medallion_Olist_Store_Architecture-Olist_Store_Architecture.drawio.png)
+
+
 3. ## Data Sources
 
 The project uses the Brazilian E-Commerce Public Dataset by Olist, which contains real transactional data from a Brazilian online marketplace.
@@ -189,7 +194,7 @@ You are free to use, modify, and distribute this project with proper attribution
 
 8. ## About Me
 
-I am a Data Analyst / Data Engineer enthusiast with a background in software engineering. I am passionate about building data-driven systems, modern data warehouses, and analytics solutions that help businesses make better decisions.
+I am a Data Analyst / Data Engineer enthusiast with a background in software engineering. I am passionate about building data-driven systems, modern data warehouses, and analytics solutions that help businesses make better decisions. https://www.linkedin.com/in/peter-nime/
 
 #### This project is part of my portfolio to demonstrate practical skills in:
 
